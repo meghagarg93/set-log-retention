@@ -18,47 +18,41 @@ exports.handler = async (event, context) => {
             let nextToken = null;
             while (true) {
                 const logGroupData = await cloudwatchlogs.describeLogGroups({
-                    logGroupNamePrefix: '/aws/codebuild/cup-central-dev-ges-cb',
                     nextToken: nextToken
                 }).promise();
                 const logGroups = logGroupData.logGroups;
-                for (const logGroup of logGroups) {
+
+                const logGroupsWithNeverExpireRetention = logGroups.filter(logGroup => logGroup.retentionInDays === undefined);
+
+
+                for (const logGroup of logGroupsWithNeverExpireRetention) {
                     const logGroupName = logGroup.logGroupName;
                     const retentionInDays = logGroup.retentionInDays;
 
                     console.log("logGroupName:  " + logGroupName + '\t' + "retentionInDays : " + retentionInDays);
                     let customRetentionDays;
 
-                    if (retentionInDays === undefined) {
-                        // If the log group has "never expire" retention policy, set a custom retention policy
-                        const logGroupNameLowerCase = logGroupName.toLowerCase();
-                        if (logGroupNameLowerCase.includes('cloudtrail')) {
-                            customRetentionDays = 90;
-                        } else if (logGroupNameLowerCase.includes('codebuild')) {
-                            customRetentionDays = 1;
-                        } else {
-                            customRetentionDays = 30;
-                        }
-
-                        await cloudwatchlogs.putRetentionPolicy({
-                            logGroupName: logGroupName,
-                            retentionInDays: customRetentionDays
-                        }).promise();
-
-                        // Add log group details to the array
-                        logGroupDetails.push({
-                            region: region,
-                            logGroupName: logGroupName,
-                            retentionInDays: customRetentionDays
-                        });
+                    // If the log group has "never expire" retention policy, set a custom retention policy
+                    const logGroupNameLowerCase = logGroupName.toLowerCase();
+                    if (logGroupNameLowerCase.includes('cloudtrail')) {
+                        customRetentionDays = 90;
+                    } else if (logGroupNameLowerCase.includes('codebuild')) {
+                        customRetentionDays = 1;
                     } else {
-                        console.log(`Log group ${logGroupName} in ${region} has a custom retention policy and will not be updated.`);
-                        logGroupDetails.push({
-                            logGroupName: logGroupName,
-                            retentionInDays: retentionInDays,
-                            Info: `Log group '${logGroupName}' in '${region}' has a custom retention policy and will not be updated.`
-                        });
+                        customRetentionDays = 30;
                     }
+
+                    // await cloudwatchlogs.putRetentionPolicy({
+                    //     logGroupName: logGroupName,
+                    //     retentionInDays: customRetentionDays
+                    // }).promise();
+
+                    // Add log group details to the array
+                    logGroupDetails.push({
+                        region: region,
+                        logGroupName: logGroupName,
+                        retentionInDays: customRetentionDays
+                    });
                 }
 
                 if (!logGroupData.nextToken) break;
