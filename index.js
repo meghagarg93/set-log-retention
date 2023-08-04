@@ -61,13 +61,11 @@ exports.handler = async (event, context) => {
             }
         }
 
-        console.log(logGroupDetails);
-
         // Publish the log group details to the SNS topic
         const snsParams = {
             Message: JSON.stringify(logGroupDetails, null, 2),
             TopicArn: 'arn:aws:sns:us-west-2:567434252311:Inspector_to_Email',
-            Subject: "Thor Log Retention Period Update Info",
+            Subject: "Log Retention Time Update Report",
         };
 
         await sns.publish(snsParams).promise();
@@ -78,10 +76,17 @@ exports.handler = async (event, context) => {
         };
     } catch (err) {
         console.error('Error:', err);
+
+        const errorWithDetails = {
+            error: err.message, // Include the error message from the caught error
+            logGroupDetails: logGroupDetails, // Include the logGroupsWithNeverExpireRetention array
+          };
+
+          
         const snsParams = {
-            Message: JSON.stringify(logGroupDetails, null, 2),
+            Message: JSON.stringify(errorWithDetails, null, 2),
             TopicArn: 'arn:aws:sns:us-west-2:567434252311:Inspector_to_Email',
-            Subject: "Error in Setting Thor Retention Policy",
+            Subject: "Error in Setting Log Retention Policy",
         };
 
         await sns.publish(snsParams).promise();
