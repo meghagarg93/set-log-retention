@@ -12,7 +12,8 @@ exports.handler = async (event, context) => {
         const regions = regionData.Regions.map(region => region.RegionName);
 
         // Loop through each region and set the retention policy for eligible log groups
-        for (const region of regions) {
+        // for (const region of regions) {
+            let region = "us-east-1";
             let cloudwatchlogs = new AWS.CloudWatchLogs({ region });
             console.log(`Setting retention for log groups in ${region}`);
             let nextToken = null;
@@ -42,10 +43,10 @@ exports.handler = async (event, context) => {
                         customRetentionDays = 30;
                     }
 
-                    // await cloudwatchlogs.putRetentionPolicy({
-                    //     logGroupName: logGroupName,
-                    //     retentionInDays: customRetentionDays
-                    // }).promise();
+                    await cloudwatchlogs.putRetentionPolicy({
+                        logGroupName: logGroupName,
+                        retentionInDays: customRetentionDays
+                    }).promise();
 
                     // Add log group details to the array
                     logGroupDetails.push({
@@ -58,7 +59,7 @@ exports.handler = async (event, context) => {
                 if (!logGroupData.nextToken) break;
                 nextToken = logGroupData.nextToken;
             }
-        }
+        // }
 
         console.log(logGroupDetails);
 
