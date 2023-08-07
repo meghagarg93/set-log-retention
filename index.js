@@ -2,7 +2,7 @@ const AWS = require('aws-sdk');
 const ec2 = new AWS.EC2();
 const sns = new AWS.SNS();
 
-exports.handler = async (event, context) => {
+exports.handler = async () => {
     // Create an empty array to store log group details
     let logGroupDetails = [];
 
@@ -61,6 +61,23 @@ exports.handler = async (event, context) => {
             }
         }
 
+        // Check if any log groups were updated
+        if (logGroupDetails.length === 0) {
+            const snsParams = {
+                Message: 'No log group found with Never Expire Retention.',
+                TopicArn: 'arn:aws:sns:us-west-2:567434252311:Inspector_to_Email',
+                Subject: "Log Retention Time Update Report",
+            };
+
+            await sns.publish(snsParams).promise();
+
+            return {
+                statusCode: 200,
+                body: 'No log group found with Never Expire Retention.'
+            };
+        }
+
+
         // Publish the log group details to the SNS topic
         const snsParams = {
             Message: JSON.stringify(logGroupDetails, null, 2),
@@ -80,9 +97,9 @@ exports.handler = async (event, context) => {
         const errorWithDetails = {
             error: err.message, // Include the error message from the caught error
             logGroupDetails: logGroupDetails, // Include the logGroupsWithNeverExpireRetention array
-          };
+        };
 
-          
+
         const snsParams = {
             Message: JSON.stringify(errorWithDetails, null, 2),
             TopicArn: 'arn:aws:sns:us-west-2:567434252311:Inspector_to_Email',
